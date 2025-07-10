@@ -13,7 +13,7 @@
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* Prevent body scroll if content is centered */
+            /* Removed: overflow: hidden; */
         }
         /* Custom scrollbar for playlist */
         .custom-scrollbar::-webkit-scrollbar {
@@ -75,7 +75,7 @@
                 class="p-3 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
                 aria-label="Next Track">
                 <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM10.445 7.168A1 1 0 0112 8v4a1 1 0 01-1.555.832l-3-2a1 1 0 010-1.664l3-2z" clip-rule="evenodd" />
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM10.445 7.168A1 1 0 0112 8v4a1 1 0 01-1.555.832l3-2a1 1 0 010-1.664l3-2z" clip-rule="evenodd" />
                 </svg>
             </button>
         </div>
@@ -113,6 +113,9 @@
                     Load URL
                 </button>
             </div>
+            <p class="text-xs text-gray-400 mt-1">
+                To load from GitHub: Navigate to your audio file on GitHub, click "Raw", and copy that URL.
+            </p>
         </div>
 
         <!-- Playlist Display -->
