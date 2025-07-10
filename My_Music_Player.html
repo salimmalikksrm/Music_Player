@@ -13,7 +13,6 @@
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            /* Removed: overflow: hidden; */
         }
         /* Custom scrollbar for playlist */
         .custom-scrollbar::-webkit-scrollbar {
@@ -53,11 +52,20 @@
         </div>
 
         <!-- Playback Controls -->
-        <div class="flex items-center justify-center space-x-6 mb-6">
-            <button id="prevBtn"
-                class="p-3 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
-                aria-label="Previous Track">
+        <div class="flex items-center justify-center space-x-4 mb-6">
+            <!-- Shuffle button removed -->
+            <button id="rewind10Btn"
+                class="relative p-3 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
+                aria-label="Rewind 10 seconds">
                 <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                <span class="absolute text-xs -mt-1 -ml-1 top-1 left-1/2 -translate-x-1/2 text-white font-bold">10</span>
+            </button>
+            <button id="prevBtn"
+                class="p-4 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
+                aria-label="Previous Track">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                 </svg>
             </button>
@@ -72,11 +80,27 @@
                 </svg>
             </button>
             <button id="nextBtn"
-                class="p-3 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
+                class="p-4 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
                 aria-label="Next Track">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM10.445 7.168A1 1 0 0112 8v4a1 1 0 01-1.555.832l3-2a1 1 0 010-1.664l3-2z" clip-rule="evenodd" />
+                </svg>
+            </button>
+            <button id="forward10Btn"
+                class="relative p-3 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
+                aria-label="Forward 10 seconds">
                 <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM10.445 7.168A1 1 0 0112 8v4a1 1 0 01-1.555.832l3-2a1 1 0 010-1.664l3-2z" clip-rule="evenodd" />
                 </svg>
+                <span class="absolute text-xs -mt-1 -ml-1 top-1 left-1/2 -translate-x-1/2 text-white font-bold">10</span>
+            </button>
+            <button id="repeatBtn"
+                class="relative p-3 bg-purple-700 hover:bg-purple-600 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-purple-500"
+                aria-label="Repeat Mode">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 7a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 11-2 0V8h-2v4h2a1 1 0 110 2H8a1 1 0 01-1-1V7z" clip-rule="evenodd" />
+                </svg>
+                <span id="repeatIndicator" class="absolute text-xs -mt-1 -ml-1 text-yellow-300 font-bold top-1 left-1/2 -translate-x-1/2"></span>
             </button>
         </div>
 
@@ -147,10 +171,18 @@
         const emptyPlaylistMessage = document.getElementById('emptyPlaylistMessage');
         const errorMessageDisplay = document.getElementById('errorMessage');
 
+        // New DOM Elements for added features
+        const rewind10Btn = document.getElementById('rewind10Btn');
+        const forward10Btn = document.getElementById('forward10Btn');
+        const repeatBtn = document.getElementById('repeatBtn');
+        const repeatIndicator = document.getElementById('repeatIndicator');
+
         // State variables
         let playlist = [];
+        let originalPlaylist = []; // To store original order for shuffle (still kept for potential future use or if user changes mind)
         let currentTrackIndex = 0;
         let isPlaying = false;
+        let repeatMode = 0; // 0: no repeat, 1: repeat all, 2: repeat one
 
         // Function to display error messages
         function showErrorMessage(message) {
@@ -177,6 +209,26 @@
                 playIcon.classList.remove('hidden');
                 pauseIcon.classList.add('hidden');
             }
+            updateMediaSessionState(); // Update Media Session when play/pause changes
+        }
+
+        // Function to update repeat mode UI
+        function updateRepeatUI() {
+            switch (repeatMode) {
+                case 0:
+                    repeatIndicator.textContent = ''; // No indicator
+                    repeatBtn.classList.remove('text-yellow-300'); // Remove highlight
+                    break;
+                case 1:
+                    repeatIndicator.textContent = 'All'; // Repeat all
+                    repeatBtn.classList.add('text-yellow-300'); // Add highlight
+                    break;
+                case 2:
+                    repeatIndicator.textContent = 'One'; // Repeat one
+                    repeatBtn.classList.add('text-yellow-300'); // Add highlight
+                    break;
+            }
+            updateMediaSessionState(); // Update Media Session when repeat mode changes
         }
 
         // Function to render the playlist
@@ -239,6 +291,7 @@
                     currentTrackName.textContent = playlist[currentTrackIndex].name;
                     showErrorMessage(''); // Clear error on successful play
                     renderPlaylist(); // Re-render to highlight current track
+                    updateMediaSessionMetadata(); // Update Media Session metadata
                 })
                 .catch(error => {
                     console.error("Error playing audio:", error);
@@ -248,6 +301,129 @@
                     renderPlaylist(); // Re-render to update playing icon
                 });
         }
+
+        // Function to seek forward/backward
+        function seek(seconds) {
+            if (audioPlayer.src) {
+                audioPlayer.currentTime = Math.max(0, Math.min(audioPlayer.duration, audioPlayer.currentTime + seconds));
+                updateMediaSessionState(); // Update Media Session position
+            }
+        }
+
+        // Function to shuffle the playlist (kept for reference, but not used by button)
+        function shufflePlaylist() {
+            if (playlist.length <= 1) return;
+
+            // If playlist is already shuffled, revert to original
+            if (playlist === originalPlaylist) {
+                playlist = [...originalPlaylist]; // Create a copy
+            } else {
+                // Store original playlist if not already stored
+                if (originalPlaylist.length === 0 || originalPlaylist.length !== playlist.length || !playlist.every((val, i) => val === originalPlaylist[i])) {
+                    originalPlaylist = [...playlist];
+                }
+
+                // Fisher-Yates (Knuth) shuffle algorithm
+                for (let i = playlist.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+                }
+            }
+
+            // If a track was playing, find its new index and play it
+            if (isPlaying && audioPlayer.src) {
+                const currentSrc = audioPlayer.src;
+                const newIndex = playlist.findIndex(track => track.src === currentSrc);
+                if (newIndex !== -1) {
+                    currentTrackIndex = newIndex;
+                } else {
+                    currentTrackIndex = 0; // Fallback if current track not found (shouldn't happen)
+                }
+            } else {
+                currentTrackIndex = 0; // If nothing was playing, reset to first track
+            }
+
+            renderPlaylist();
+            showErrorMessage('Playlist shuffled!');
+        }
+
+        // Function to toggle repeat mode
+        function toggleRepeat() {
+            repeatMode = (repeatMode + 1) % 3; // Cycle through 0, 1, 2
+            updateRepeatUI();
+            let message = '';
+            switch (repeatMode) {
+                case 0: message = 'Repeat: Off'; break;
+                case 1: message = 'Repeat: All'; break;
+                case 2: message = 'Repeat: One'; break;
+            }
+            showErrorMessage(message);
+        }
+
+        // Media Session API functions
+        function setupMediaSession() {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.setActionHandler('play', () => {
+                    if (audioPlayer.paused) {
+                        playPauseBtn.click(); // Simulate click on our play/pause button
+                    }
+                });
+                navigator.mediaSession.setActionHandler('pause', () => {
+                    if (!audioPlayer.paused) {
+                        playPauseBtn.click(); // Simulate click on our play/pause button
+                    }
+                });
+                navigator.mediaSession.setActionHandler('previoustrack', () => {
+                    prevBtn.click(); // Simulate click on our previous button
+                });
+                navigator.mediaSession.setActionHandler('nexttrack', () => {
+                    nextBtn.click(); // Simulate click on our next button
+                });
+                // Optional: Add seek handlers for finer control
+                navigator.mediaSession.setActionHandler('seekbackward', (event) => {
+                    const seekTime = event.seekOffset || 10; // Default 10 seconds
+                    seek(-seekTime);
+                });
+                navigator.mediaSession.setActionHandler('seekforward', (event) => {
+                    const seekTime = event.seekOffset || 10; // Default 10 seconds
+                    seek(seekTime);
+                });
+                navigator.mediaSession.setActionHandler('seekto', (event) => {
+                    if (audioPlayer.duration) {
+                        audioPlayer.currentTime = event.seekTime;
+                        updateMediaSessionState();
+                    }
+                });
+            }
+        }
+
+        function updateMediaSessionMetadata() {
+            if ('mediaSession' in navigator && playlist.length > 0) {
+                const currentTrack = playlist[currentTrackIndex];
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: currentTrack.name,
+                    artist: 'Music Player', // You can customize this
+                    album: 'My Playlist', // You can customize this
+                    // artwork: [
+                    //     { src: 'path/to/96x96.png', sizes: '96x96', type: 'image/png' },
+                    //     { src: 'path/to/128x128.png', sizes: '128x128', type: 'image/png' },
+                    //     // ... other sizes
+                    // ]
+                });
+            }
+        }
+
+        function updateMediaSessionState() {
+            if ('mediaSession' in navigator && audioPlayer.src) {
+                navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+                navigator.mediaSession.setPositionState({
+                    duration: audioPlayer.duration,
+                    playbackRate: audioPlayer.playbackRate,
+                    position: audioPlayer.currentTime
+                });
+            }
+        }
+
 
         // Event Listeners
         playPauseBtn.addEventListener('click', () => {
@@ -259,8 +435,6 @@
                 audioPlayer.pause();
                 isPlaying = false;
             } else {
-                // If paused and current track is valid, resume
-                // Otherwise, play the current track from the beginning or play the first if none selected
                 if (audioPlayer.paused && audioPlayer.src) {
                     audioPlayer.play()
                         .then(() => {
@@ -277,7 +451,7 @@
                 }
             }
             updatePlayPauseUI();
-            renderPlaylist(); // Update playlist to show playing icon
+            renderPlaylist();
         });
 
         prevBtn.addEventListener('click', () => {
@@ -289,25 +463,54 @@
 
         nextBtn.addEventListener('click', () => {
             if (playlist.length > 0) {
-                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                playTrack(currentTrackIndex);
+                // Handle repeat one mode
+                if (repeatMode === 2) {
+                    playTrack(currentTrackIndex); // Replay current track
+                } else {
+                    currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                    playTrack(currentTrackIndex);
+                }
             }
         });
+
+        rewind10Btn.addEventListener('click', () => seek(-10));
+        forward10Btn.addEventListener('click', () => seek(10));
+        repeatBtn.addEventListener('click', toggleRepeat);
 
         audioPlayer.addEventListener('timeupdate', () => {
             progressBar.value = audioPlayer.currentTime;
             currentTimeDisplay.textContent = formatTime(audioPlayer.currentTime);
+            updateMediaSessionState(); // Update Media Session position
         });
 
         audioPlayer.addEventListener('loadedmetadata', () => {
             progressBar.max = audioPlayer.duration;
             durationDisplay.textContent = formatTime(audioPlayer.duration);
+            updateMediaSessionMetadata(); // Update Media Session metadata
+            updateMediaSessionState(); // Update Media Session state (duration, etc.)
         });
 
         audioPlayer.addEventListener('ended', () => {
             if (playlist.length > 0) {
-                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                playTrack(currentTrackIndex);
+                if (repeatMode === 2) { // Repeat one
+                    playTrack(currentTrackIndex);
+                } else if (repeatMode === 1) { // Repeat all
+                    currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                    playTrack(currentTrackIndex);
+                } else { // No repeat
+                    if (currentTrackIndex < playlist.length - 1) {
+                        currentTrackIndex++;
+                        playTrack(currentTrackIndex);
+                    } else {
+                        isPlaying = false;
+                        updatePlayPauseUI();
+                        currentTrackName.textContent = 'No track selected';
+                        currentTimeDisplay.textContent = '00:00';
+                        durationDisplay.textContent = '00:00';
+                        progressBar.value = 0;
+                        renderPlaylist();
+                    }
+                }
             } else {
                 isPlaying = false;
                 updatePlayPauseUI();
@@ -342,6 +545,7 @@
                 src: URL.createObjectURL(file)
             }));
             playlist = [...playlist, ...newTracks];
+            originalPlaylist = [...playlist]; // Update original playlist
             if (playlist.length === newTracks.length) { // If this was the first batch of songs
                 playTrack(0);
             }
@@ -360,6 +564,7 @@
                 src: url
             };
             playlist = [...playlist, newTrack];
+            originalPlaylist = [...playlist]; // Update original playlist
             if (playlist.length === 1) { // If this is the first song added
                 playTrack(0);
             }
@@ -368,9 +573,23 @@
             showErrorMessage('');
         });
 
-        // Initial render
-        audioPlayer.volume = volumeControl.value; // Set initial volume
-        renderPlaylist(); // Render playlist on load
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            audioPlayer.volume = volumeControl.value; // Set initial volume
+            renderPlaylist(); // Render playlist on load
+            updateRepeatUI(); // Initialize repeat UI
+            setupMediaSession(); // Setup Media Session API handlers
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js') // Path to your service worker file
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            }
+        });
     </script>
 </body>
 </html>
